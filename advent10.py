@@ -1,5 +1,8 @@
 import re
 
+#pylint: disable=C0103
+#pylint: disable=C0325
+
 RESP_VAL1 = 61
 RESP_VAL2 = 17
 task = open('advent10', 'r')
@@ -36,7 +39,7 @@ while True:
             if bots[i][0][1] == RESP_VAL1 and bots[i][0][0] == RESP_VAL2:
                 print('bot ' + str(i) + ' is responsible')
 #            print('ready')
-            for j in range(0,2):
+            for j in range(0, 2):
                 if bots[i][1][j][0] == 'h':
                     val = max(bots[i][0])
                 elif bots[i][1][j][0] == 'l':
@@ -58,10 +61,11 @@ while True:
         end = True
         for i in bots:
             if len(bots[i][0]) != 0:
-             end = False 
+                end = False
         if end:
             break
 #print(bots)
 print(bins)
 answer = bins[0][0] * bins[1][0] * bins[2][0]
 print(answer)
+task.close()
