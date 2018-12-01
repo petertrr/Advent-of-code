@@ -1,30 +1,13 @@
-from collections import Counter
+#!/env/python3
 
-def update_freq_and_check(df):
-    global frequency, frequencies
-    frequency += df
-    frequencies[frequency] +=1
-    if frequencies[frequency] == 2:
-        print("First frequency to be reached twice: {}".format(frequency))
-        return True
-    return False
+from collections import Counter  # using Counter allows to catch frequency occuring more than once
+from itertools import accumulate, cycle
 
-
-frequency = 0
+N = 2  # number of times frequency is required
 frequencies = Counter()
-df = []
 with open("01.input") as f:
-    for line in f.readlines():
-        try:
-            df.append(int(line.strip()))
-            update_freq_and_check(df[-1])
-        except:
-            break
+    df = [int(l) for l in f.readlines() if l.strip()]
+freq_2 = next(f for f in accumulate(cycle(df)) if frequencies[f] == N - 1 or frequencies.update((f,)))
 
-print("Final frequency is {}".format(frequency))
-
-i = 0
-while True:
-    if update_freq_and_check(df[i]):
-        break
-    i = (i + 1) % len(df)
+print("Final frequency is {}".format(sum(df)))
+print("First frequency to be reached twice: {}".format(freq_2))
