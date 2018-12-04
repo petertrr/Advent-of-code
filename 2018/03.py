@@ -2,13 +2,6 @@ import re
 from itertools import chain
 from functools import reduce
 
-example = \
-    '''#1 @ 1,3: 4x4
-    #2 @ 3,1: 4x4
-    #3 @ 5,5: 2x2'''
-
-task = open("03.input").readlines()
-
 
 class Claim:
     pattern = r'#(\d+) @ (\d+),(\d+): (\d+)x(\d+)'
@@ -21,6 +14,8 @@ class Claim:
         self.width_x = int(arr[3])
         self.width_y = int(arr[4])
 
+
+task = open("03.input").readlines()
 
 claims = set(Claim(line.strip()) for line in task)
 
@@ -43,5 +38,4 @@ for c in claims:
                 fabric[i][j] = -1
 
 print(reduce(lambda count, i: count + (1 if i < 0 else 0), chain(*fabric)))
-
 print(next(c for c in overlaps if not overlaps[c]))
