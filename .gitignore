@@ -2,3 +2,5 @@
 .vscode
 */.ipynb_checkpoints*
 *.iml
+*.class
+*.kotlin_module
