@@ -1,3 +1,5 @@
+#!/usr/bin/env kscript
+
 import java.io.File
 
 data class Slope(val right: Int, val down: Int)

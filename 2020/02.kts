@@ -2,37 +2,59 @@
 
 import java.io.File
 
-data class OldPolicy(val letter: Char, val times: IntRange) {
-    companion object {
-        val regex = Regex("^(\\d+)-(\\d+)\\s")
+sealed class Policy {
+    abstract val regex: Regex
+    abstract fun isValid(password: String): Boolean
 
-        fun fromString(policyString: String) =
-                regex.find(policyString)
-                        ?.let {
-                            OldPolicy(
-                                policyString.last(),
-                                it.groupValues.drop(1).map { it.toInt() }.let { it.first()..it[1] }
-                            )
-                        }
-                        ?: error("Policy string $policyString doesn't match required policy pattern")
+    data class OldPolicy(val letter: Char, val times: IntRange) : Policy() {
+        override val regex = Regex("^(\\d+)-(\\d+)\\s")
+
+        override fun isValid(password: String) = password.count { it == letter } in times
+    }
+
+    data class NewPolicy(val letter: Char, val idx1: Int, val idx2: Int) : Policy() {
+        override val regex = Regex("^(\\d+)-(\\d+)\\s")
+
+        override fun isValid(password: String) = (password[idx1 - 1] == letter) xor (password[idx2 - 1] == letter)
     }
 }
 
-data class NewPolicy(val letter: Char, val idx1: Int, val idx2: Int) {
-    companion object {
-        val regex = Regex("^(\\d+)-(\\d+)\\s")
+fun <T: Policy> T.createPolicy(policyString: String): T {
+    return regex.find(policyString)
+            ?.let {
+                when (this) {
+                    is Policy.OldPolicy ->
+                        Policy.OldPolicy(
+                                policyString.last(),
+                                it.groupValues.drop(1).map { it.toInt() }.let { it.first()..it[1] }
+                        )
+                    is Policy.NewPolicy ->
+                        Policy.NewPolicy(
+                                policyString.last(),
+                                it.groupValues[1].toInt(),
+                                it.groupValues[2].toInt(),
+                        )
+                }
+            }
+            ?: error("Policy string $policyString doesn't match required policy pattern ${regex.pattern}")
+}
 
-        fun fromString(policyString: String) =
-                regex.find(policyString)
-                        ?.let {
-                            NewPolicy(
-                                    policyString.last(),
-                                    it.groupValues[1].toInt(),
-                                    it.groupValues[2].toInt(),
-                            )
+fun <T: Policy> solve() {
+    File("02.input")
+            .readLines()
+            .map { line ->
+                line.split(':', limit = 2)
+                        .map { it.trim() }
+                        .let { (policyString, password) ->
+                            Policy.OldPolicy.fromString(policyString) to password
                         }
-                        ?: error("Policy string $policyString doesn't match required policy pattern")
-    }
+            }
+            .count { (policy, password) ->
+                password.count { it == policy.letter } in policy.times
+            }
+            .also {
+                println("Passwords that comply with policy count: $it")
+            }
 }
 
 // part 1
@@ -42,7 +64,7 @@ run {
                 line.split(':', limit = 2)
                         .map { it.trim() }
                         .let { (policyString, password) ->
-                             OldPolicy.fromString(policyString) to password
+                            Policy.OldPolicy.fromString(policyString) to password
                         }
             }
             .count { (policy, password) ->
@@ -60,7 +82,7 @@ run {
                 line.split(':', limit = 2)
                         .map { it.trim() }
                         .let { (policyString, password) ->
-                            NewPolicy.fromString(policyString) to password
+                            Policy.NewPolicy.fromString(policyString) to password
                         }
             }
             .count { (policy, password) ->

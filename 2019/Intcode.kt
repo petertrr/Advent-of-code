@@ -15,7 +15,11 @@ enum class OpcodeType(private val code: Int, val numParams: Int) {
     MULT(2, 3),
     READ(3, 1),
     WRITE(4, 1),
-    HALT(99, 1)
+    JUMP_IF_TRUE(5, 2),
+    JUMP_IF_FALSE(6, 2),
+    LESS_THAN(7, 3),
+    EQUALS(8, 3),
+    HALT(99, 0)
     ;
     
     companion object {
@@ -52,7 +56,7 @@ class Opcode(code: Int) {
     val parameterModes = codes.second
 }
 
-sealed class Operation(private val opcodeType: OpcodeType) {
+sealed class Operation(protected val opcodeType: OpcodeType) {
     abstract fun execute(position: Int, register: MutableList<Int>): Int
     
     class Halt : Operation(OpcodeType.HALT) {
@@ -63,7 +67,7 @@ sealed class Operation(private val opcodeType: OpcodeType) {
         override fun execute(position: Int, register: MutableList<Int>): Int {
             register[register[position + 3]] =
                 register.parameterAt(position + 1, parameterModes[0]) + register.parameterAt(position + 2, parameterModes[1])
-            return position + 4
+            return position + 1 + opcodeType.numParams
         }
     }
     
@@ -71,24 +75,73 @@ sealed class Operation(private val opcodeType: OpcodeType) {
         override fun execute(position: Int, register: MutableList<Int>): Int {
             register[register[position + 3]] =
                 register.parameterAt(position + 1, parameterModes[0]) * register.parameterAt(position + 2, parameterModes[1])
-            return position + 4
+            return position + 1 + opcodeType.numParams
         }
     }
     
     class Read(private val inputs: MutableList<Int>): Operation(OpcodeType.READ) {
         override fun execute(position: Int, register: MutableList<Int>): Int {
             register[register[position + 1]] = inputs.removeLast()
-            return position + 2
+            return position + 1 + opcodeType.numParams
         }
     }
     
     class Write(private val parameterMode: ParameterMode, private val outputs: MutableList<Int>): Operation(OpcodeType.WRITE) {
         override fun execute(position: Int, register: MutableList<Int>): Int {
             outputs.add(register.parameterAt(position + 1, parameterMode))
-            return position + 2
+            return position + 1 + opcodeType.numParams
+        }
+    }
+    
+    abstract class JumpIfCondition(protected val parameterModes: List<ParameterMode>,
+                                 opcodeType: OpcodeType)
+        : Operation(opcodeType) {
+        abstract fun condition(position: Int, register: MutableList<Int>): Boolean
+            
+        override fun execute(position: Int, register: MutableList<Int>): Int {
+            return if (condition(position, register)) {
+                register.parameterAt(position + 2, parameterModes[1])
+            } else {
+                position + 1 + opcodeType.numParams
+            }
+        }
+    }
+    
+    class JumpIfTrue(parameterModes: List<ParameterMode>)
+        : JumpIfCondition(parameterModes, OpcodeType.JUMP_IF_TRUE) {
+        override fun condition(position: Int, register: MutableList<Int>) = register.parameterAt(position + 1, parameterModes[0]) != 0
+    }
+    
+    class JumpIfFalse(parameterModes: List<ParameterMode>)
+        : JumpIfCondition(parameterModes, OpcodeType.JUMP_IF_FALSE) {
+        override fun condition(position: Int, register: MutableList<Int>) = register.parameterAt(position + 1, parameterModes[0]) == 0
+    }
+    
+    abstract class StoreIfCondition(protected val parameterModes: List<ParameterMode>,
+                                    opcodeType: OpcodeType)
+        : Operation(opcodeType) {
+        abstract fun condition(position: Int, register: MutableList<Int>): Boolean
+            
+        override fun execute(position: Int, register: MutableList<Int>): Int {
+            register[register[position + 3]] = if (condition(position, register)) 1 else 0
+            return position + 1 + opcodeType.numParams
         }
     }
 
+    class LessThan(parameterModes: List<ParameterMode>)
+        : StoreIfCondition(parameterModes, OpcodeType.LESS_THAN) {
+        override fun condition(position: Int, register: MutableList<Int>): Boolean {
+            return register.parameterAt(position + 1, parameterModes[0]) < register.parameterAt(position + 2, parameterModes[1])
+        }
+    }
+
+    class Equals(parameterModes: List<ParameterMode>)
+        : StoreIfCondition(parameterModes, OpcodeType.LESS_THAN) {
+        override fun condition(position: Int, register: MutableList<Int>): Boolean {
+            return register.parameterAt(position + 1, parameterModes[0]) == register.parameterAt(position + 2, parameterModes[1])
+        }
+    }
+        
     fun MutableList<Int>.parameterAt(index: Int, parameterMode: ParameterMode) = let { register ->
         when (parameterMode) {
             ParameterMode.POSITION -> register[register[index]]
@@ -104,6 +157,7 @@ class Intcode(private val register: MutableList<Int>) {
     fun runProgram() {
         var position = 0
         while (true) {
+//            println("Parsing opcode @$position, value is ${register[position]}")
             val opcode = register[position].let(::Opcode)
             val operation = when (opcode.opcodeType) {
                 OpcodeType.HALT -> break
@@ -111,6 +165,10 @@ class Intcode(private val register: MutableList<Int>) {
                 OpcodeType.MULT -> Operation.Mult(opcode.parameterModes)
                 OpcodeType.READ -> Operation.Read(inputs)
                 OpcodeType.WRITE -> Operation.Write(opcode.parameterModes.single(), outputs)
+                OpcodeType.JUMP_IF_TRUE -> Operation.JumpIfTrue(opcode.parameterModes)
+                OpcodeType.JUMP_IF_FALSE -> Operation.JumpIfFalse(opcode.parameterModes)
+                OpcodeType.LESS_THAN -> Operation.LessThan(opcode.parameterModes)
+                OpcodeType.EQUALS -> Operation.Equals(opcode.parameterModes)
             }
             position = operation.execute(position, register)
         }
