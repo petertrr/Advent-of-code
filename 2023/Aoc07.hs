@@ -1,3 +1,5 @@
+module Aoc07 where
+
 import System.IO
 import Data.List
 import Data.Ord
@@ -39,8 +41,8 @@ parseHand s
   where counts = countChars s
         values = map snd counts
 
-main = do
-  content <- readFile "07.input"
+aoc2023_07 args = do
+  content <- readFile $ head args
   let input = map (toTuple . words) $ lines content
   let handsWithBids = map (Data.Bifunctor.first parseHand) input
   let sortedIndexedHandsWithBids = zip [1..] $ sortBy (comparing fst) handsWithBids
