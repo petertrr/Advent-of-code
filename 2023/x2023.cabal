@@ -52,7 +52,7 @@ executable x2023
     main-is:          2023.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: Aoc07, Aoc08, Aoc09, Aoc11
+    other-modules: Aoc07, Aoc08, Aoc09, Aoc11, Aoc15
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
