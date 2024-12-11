@@ -1,8 +1,13 @@
 .idea
 .vscode
 */.ipynb_checkpoints*
+
 *.iml
 *.class
 *.kotlin_module
+target
+build
+
 *.hi
 *.o
+dist-newstyle
