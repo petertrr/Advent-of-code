@@ -1,0 +1,19 @@
+cabal-version:      3.0
+
+name:               x2025
+version:            0.1.0.0
+
+license:            MIT
+license-file:       LICENSE
+
+author:             Peter Trifanov
+maintainer:         peter.trifanov@gmail.com
+
+extra-source-files: CHANGELOG.md
+
+executable x2025
+    main-is:          2025.hs
+    other-modules: Aoc01
+    build-depends:    base ^>=4.20.2.0, containers
+    default-language: Haskell2010
+    ghc-options: -O2
