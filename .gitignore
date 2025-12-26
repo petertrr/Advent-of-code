@@ -11,3 +11,7 @@ build
 *.hi
 *.o
 dist-newstyle
+
+# task inputs
+*.test
+*.input
